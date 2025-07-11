@@ -28,12 +28,7 @@ public class Member implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new GrantedAuthority() {
-            @Override
-            public String getAuthority() {
-                return role.name();
-            }
-        });
+        return List.of((GrantedAuthority) () -> role.name());
     }
 
     @Override
