@@ -8,7 +8,6 @@ import example.security_practice.security.filter.JwtAuthenticationFilter;
 import example.security_practice.security.filter.LoginAuthenticationFilter;
 import example.security_practice.security.handler.LoginFailHandler;
 import example.security_practice.security.handler.LoginSuccessHandler;
-import example.security_practice.service.MemberService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,6 +18,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.logout.LogoutFilter;
@@ -28,7 +28,7 @@ import org.springframework.security.web.authentication.logout.LogoutFilter;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final MemberService memberService;
+    private final UserDetailsService userDetailsService;
     private final MemberRepository memberRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtUtil jwtUtil;
@@ -59,7 +59,7 @@ public class SecurityConfig {
     @Bean
     public LoginAuthenticationFilter loginAuthenticationFilter() {
         return new LoginAuthenticationFilter(
-                objectMapper(),
+                new ObjectMapper(),
                 authenticationManager(),
                 loginSuccessHandler(),
                 loginFailHandler()
@@ -77,18 +77,13 @@ public class SecurityConfig {
     }
 
     @Bean
-    public ObjectMapper objectMapper() {
-        return new ObjectMapper();
-    }
-
-    @Bean
     public AuthenticationManager authenticationManager() {
-        return new ProviderManager();
+        return new ProviderManager(daoAuthenticationProvider());
     }
 
     @Bean
     public DaoAuthenticationProvider daoAuthenticationProvider() {
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(memberService);
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder());
         return provider;
     }
