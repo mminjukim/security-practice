@@ -1,12 +1,10 @@
 package example.security_practice.security.handler;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import example.security_practice.domain.Member;
 import example.security_practice.domain.RefreshToken;
 import example.security_practice.repository.RefreshTokenRepository;
 import example.security_practice.security.JwtUtil;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +18,6 @@ public class LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
     private final JwtUtil jwtUtil;
     private final RefreshTokenRepository refreshTokenRepository;
-    private final ObjectMapper objectMapper;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
@@ -47,12 +44,5 @@ public class LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
     private String extractEmailFromAuthentication(Authentication authentication) {
         Member member = (Member) authentication.getPrincipal();
         return member.getEmail();
-    }
-
-    private Cookie createCookie(String value) {
-        Cookie cookie = new Cookie("RefreshToken", value);
-        cookie.setMaxAge(12 * 60 * 60); // 12h
-        cookie.setHttpOnly(true);   //JS로 접근 불가, 탈취 위험 감소
-        return cookie;
     }
 }

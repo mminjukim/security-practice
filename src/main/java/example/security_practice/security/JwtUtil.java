@@ -28,8 +28,6 @@ public class JwtUtil {
 
     @Value("${jwt.secret}")
     private String secret;
-    @Value("${jwt.access.header}")
-    private String accessHeader;
     @Value("${jwt.access.expiration}")
     private long accessExpiration;
     @Value("${jwt.refresh.expiration}")
