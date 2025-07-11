@@ -42,7 +42,7 @@ public class JwtUtil {
     }
 
     // Refresh Token 생성
-    public String createRefreshToken(String email) {
+    public String createRefreshToken() {
         return Jwts.builder()
                 .subject("RefreshToken")
                 .expiration(new Date(System.currentTimeMillis() + refreshExpiration * 1000))
