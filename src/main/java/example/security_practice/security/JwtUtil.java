@@ -1,9 +1,14 @@
 package example.security_practice.security;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import example.security_practice.dto.response.LoginSuccessDTO;
 import example.security_practice.exception.CustomException;
 import example.security_practice.exception.ErrorCode;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,6 +16,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.crypto.SecretKey;
+import java.io.IOException;
+import java.util.Arrays;
 import java.util.Date;
 
 @Component
@@ -29,6 +36,7 @@ public class JwtUtil {
     private long refreshExpiration;
 
     private static final String BEARER = "Bearer ";
+    private final ObjectMapper objectMapper;
     SecretKey secretKey = Keys.hmacShaKeyFor(secret.getBytes());
 
     // Access Token 생성
@@ -63,14 +71,26 @@ public class JwtUtil {
         }
     }
 
-    // HTTP 요청에서 토큰 추출
-    public String extractToken(String authorizationHeader) {
+    // HTTP 요청에서 Access 토큰 추출
+    public String extractAccessToken(String authorizationHeader) {
         if (authorizationHeader == null) {
             throw new CustomException(ErrorCode.TOKEN_NULL);
         } else if (authorizationHeader.startsWith(BEARER)) {
             return authorizationHeader.substring(BEARER.length());
         } else {
             throw new CustomException(ErrorCode.TOKEN_NOT_BEARER);
+        }
+    }
+
+    // HTTP 요청에서 Refresh 토큰 추출
+    public String extractRefreshToken(HttpServletRequest request) {
+        Cookie cookie = Arrays.stream(request.getCookies()).filter(c -> c
+                        .getName().equals("RefreshToken")).findFirst()
+                .orElse(null);
+        if (cookie != null) {
+            return cookie.getValue();
+        } else {
+            return "NULL";
         }
     }
 
@@ -82,5 +102,32 @@ public class JwtUtil {
         } else {
             throw new CustomException(ErrorCode.INVALID_TOKEN);
         }
+    }
+
+    // HTTP 응답에 Refresh, Access 토큰 세팅
+    public void setJwtTokens(HttpServletResponse response, String email,
+                             String accessToken, String refreshToken) throws IOException {
+        // 응답 바디 생성
+        LoginSuccessDTO dto = LoginSuccessDTO.builder()
+                .message("토큰이 성공적으로 발급되었습니다.")
+                .email(email)
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .build();
+        String result = objectMapper.writeValueAsString(dto);
+
+        // 응답 객체
+        response.setStatus(HttpServletResponse.SC_OK);
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        response.addCookie(createCookie(refreshToken));
+        response.getWriter().write(result);
+    }
+
+    private Cookie createCookie(String value) {
+        Cookie cookie = new Cookie("RefreshToken", value);
+        cookie.setMaxAge(12 * 60 * 60); // 12h
+        cookie.setHttpOnly(true);   //JS로 접근 불가, 탈취 위험 감소
+        return cookie;
     }
 }

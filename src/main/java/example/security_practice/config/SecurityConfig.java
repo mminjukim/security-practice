@@ -1,8 +1,10 @@
 package example.security_practice.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import example.security_practice.repository.MemberRepository;
 import example.security_practice.repository.RefreshTokenRepository;
 import example.security_practice.security.JwtUtil;
+import example.security_practice.security.filter.JwtAuthenticationFilter;
 import example.security_practice.security.filter.LoginAuthenticationFilter;
 import example.security_practice.security.handler.LoginFailHandler;
 import example.security_practice.security.handler.LoginSuccessHandler;
@@ -27,6 +29,7 @@ import org.springframework.security.web.authentication.logout.LogoutFilter;
 public class SecurityConfig {
 
     private final MemberService memberService;
+    private final MemberRepository memberRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtUtil jwtUtil;
 
@@ -37,6 +40,7 @@ public class SecurityConfig {
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .addFilterAfter(loginAuthenticationFilter(), LogoutFilter.class)
+                .addFilterBefore(jwtAuthenticationFilter(), LoginAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/signup", "/", "/login").permitAll()
                         .anyRequest().authenticated())
@@ -45,6 +49,11 @@ public class SecurityConfig {
                         .invalidateHttpSession(true))
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .build();
+    }
+
+    @Bean
+    public JwtAuthenticationFilter jwtAuthenticationFilter() {
+        return new JwtAuthenticationFilter(jwtUtil, memberRepository, refreshTokenRepository);
     }
 
     @Bean
@@ -59,7 +68,7 @@ public class SecurityConfig {
 
     @Bean
     public LoginSuccessHandler loginSuccessHandler() {
-        return new LoginSuccessHandler(jwtUtil, refreshTokenRepository);
+        return new LoginSuccessHandler(jwtUtil, refreshTokenRepository, objectMapper());
     }
 
     @Bean
