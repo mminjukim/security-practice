@@ -73,20 +73,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         // 기존 RefreshToken 삭제
         refreshTokenRepository.delete(refreshTokenEntity);
-
-        // 새 AccessToken과 RefreshToken 발급
-        String accessToken = jwtUtil.createAccessToken(email);
-        String newRefreshToken = jwtUtil.createRefreshToken();
-
-        // 새 RefreshToken 저장
-        RefreshToken newRefreshTokenEntity = RefreshToken.builder()
-                .token(refreshToken)
-                .email(email)
-                .build();
-        refreshTokenRepository.save(newRefreshTokenEntity);
-
         // 응답 작성
-        jwtUtil.setJwtTokens(response, email, accessToken, newRefreshToken);
+        jwtUtil.respondJwtTokens(response, email);
     }
 
     // AccessToken 검증 후 Authentication 객체 리턴

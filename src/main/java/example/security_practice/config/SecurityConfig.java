@@ -4,9 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import example.security_practice.repository.MemberRepository;
 import example.security_practice.repository.RefreshTokenRepository;
 import example.security_practice.security.JwtUtil;
+import example.security_practice.security.filter.ExceptionHandlingFilter;
 import example.security_practice.security.filter.JwtAuthenticationFilter;
 import example.security_practice.security.filter.LoginAuthenticationFilter;
-import example.security_practice.security.handler.LoginFailHandler;
 import example.security_practice.security.handler.LoginSuccessHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -21,6 +21,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.logout.LogoutFilter;
 
 @Configuration
@@ -39,16 +40,22 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
-                .addFilterAfter(loginAuthenticationFilter(), LogoutFilter.class)
-                .addFilterBefore(jwtAuthenticationFilter(), LoginAuthenticationFilter.class)
+                .addFilterBefore(exceptionHandlingFilter(), LogoutFilter.class)
+                .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(loginAuthenticationFilter(), JwtAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/signup", "/", "/login").permitAll()
+                        .requestMatchers("/signup", "/", "/login", "/error").permitAll()
                         .anyRequest().authenticated())
                 .logout((logout) -> logout
                         .logoutSuccessUrl("/login")
                         .invalidateHttpSession(true))
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .build();
+    }
+
+    @Bean
+    public ExceptionHandlingFilter exceptionHandlingFilter() {
+        return new ExceptionHandlingFilter(new ObjectMapper());
     }
 
     @Bean
@@ -61,19 +68,13 @@ public class SecurityConfig {
         return new LoginAuthenticationFilter(
                 new ObjectMapper(),
                 authenticationManager(),
-                loginSuccessHandler(),
-                loginFailHandler()
+                loginSuccessHandler()
         );
     }
 
     @Bean
     public LoginSuccessHandler loginSuccessHandler() {
-        return new LoginSuccessHandler(jwtUtil, refreshTokenRepository);
-    }
-
-    @Bean
-    public LoginFailHandler loginFailHandler() {
-        return new LoginFailHandler();
+        return new LoginSuccessHandler(jwtUtil);
     }
 
     @Bean

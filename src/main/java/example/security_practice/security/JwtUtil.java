@@ -1,9 +1,11 @@
 package example.security_practice.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import example.security_practice.domain.RefreshToken;
 import example.security_practice.dto.response.LoginSuccessDTO;
 import example.security_practice.exception.CustomException;
 import example.security_practice.exception.ErrorCode;
+import example.security_practice.repository.RefreshTokenRepository;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
@@ -19,6 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.crypto.SecretKey;
 import java.io.IOException;
 import java.security.Key;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Date;
 
@@ -37,6 +41,7 @@ public class JwtUtil {
     private Key key;
     private static final String BEARER = "Bearer ";
     private final ObjectMapper objectMapper;
+    private final RefreshTokenRepository refreshTokenRepository;
 
     @PostConstruct
     public void init() {
@@ -109,9 +114,31 @@ public class JwtUtil {
         }
     }
 
+    // 토큰에서 만료시간 추출
+    public LocalDateTime extractExpiration(String token) {
+        if (isTokenValid(token)) {
+            return Jwts.parser().verifyWith((SecretKey) key).build()
+                    .parseSignedClaims(token).getPayload().getExpiration()
+                    .toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+        } else {
+            throw new CustomException(ErrorCode.INVALID_TOKEN);
+        }
+    }
+
     // HTTP 응답에 Refresh, Access 토큰 세팅
-    public void setJwtTokens(HttpServletResponse response, String email,
-                             String accessToken, String refreshToken) throws IOException {
+    public void respondJwtTokens(HttpServletResponse response, String email) throws IOException {
+        // 새 토큰 생성
+        String accessToken = createAccessToken(email);
+        String refreshToken = createRefreshToken();
+
+        // RefreshToken 저장
+        RefreshToken refreshTokenEntity = RefreshToken.builder()
+                .token(refreshToken)
+                .expiresAt(extractExpiration(refreshToken))
+                .email(email)
+                .build();
+        refreshTokenRepository.save(refreshTokenEntity);
+
         // 응답 바디 생성
         LoginSuccessDTO dto = LoginSuccessDTO.builder()
                 .message("토큰이 성공적으로 발급되었습니다.")

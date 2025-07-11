@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import example.security_practice.exception.CustomException;
 import example.security_practice.exception.ErrorCode;
-import example.security_practice.security.handler.LoginFailHandler;
 import example.security_practice.security.handler.LoginSuccessHandler;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -29,14 +28,12 @@ public class LoginAuthenticationFilter extends AbstractAuthenticationProcessingF
     // "/login" 경로의 POST 요청에 필터 적용하기 위해 PathPatternRequestMatcher 사용
     public LoginAuthenticationFilter(ObjectMapper objectMapper,
                                      AuthenticationManager authenticationManager,
-                                     LoginSuccessHandler loginSuccessHandler,
-                                     LoginFailHandler loginFailHandler) {
+                                     LoginSuccessHandler loginSuccessHandler) {
         super(PathPatternRequestMatcher
                 .withDefaults().matcher(HttpMethod.POST, "/login"));
         this.objectMapper = objectMapper;
         this.setAuthenticationManager(authenticationManager);
         this.setAuthenticationSuccessHandler(loginSuccessHandler);
-        this.setAuthenticationFailureHandler(loginFailHandler);
     }
 
     @Override
@@ -51,7 +48,7 @@ public class LoginAuthenticationFilter extends AbstractAuthenticationProcessingF
         // 요청 body 가져오기
         String messageBody = StreamUtils.copyToString(request.getInputStream(), StandardCharsets.UTF_8);
         Map<String, String> requestMap = objectMapper.readValue(
-                messageBody, new TypeReference<Map<String, String>>() {
+                messageBody, new TypeReference<>() {
                 });
 
         // email, password 가져오기
@@ -60,7 +57,10 @@ public class LoginAuthenticationFilter extends AbstractAuthenticationProcessingF
 
         // Authentication 객체 세팅
         UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(email, password);
-
-        return this.getAuthenticationManager().authenticate(token);
+        try {
+            return this.getAuthenticationManager().authenticate(token);
+        } catch (AuthenticationException e) {
+            throw new CustomException(ErrorCode.LOGIN_FAILED);
+        }
     }
 }

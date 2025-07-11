@@ -1,8 +1,6 @@
 package example.security_practice.security.handler;
 
 import example.security_practice.domain.Member;
-import example.security_practice.domain.RefreshToken;
-import example.security_practice.repository.RefreshTokenRepository;
 import example.security_practice.security.JwtUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,7 +15,6 @@ import java.io.IOException;
 public class LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
     private final JwtUtil jwtUtil;
-    private final RefreshTokenRepository refreshTokenRepository;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
@@ -25,20 +22,10 @@ public class LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
                                         Authentication authentication)
             throws IOException, ServletException {
 
-        // 성공 Authentication 에서 이메일 추출해 토큰 생성
+        // 성공 Authentication 에서 이메일 추출
         String email = extractEmailFromAuthentication(authentication);
-        String accessToken = jwtUtil.createAccessToken(email);
-        String refreshToken = jwtUtil.createRefreshToken();
-
-        // RefreshToken 저장
-        RefreshToken refreshTokenEntity = RefreshToken.builder()
-                .token(refreshToken)
-                .email(email)
-                .build();
-        refreshTokenRepository.save(refreshTokenEntity);
-
         // 응답 작성
-        jwtUtil.setJwtTokens(response, email, accessToken, refreshToken);
+        jwtUtil.respondJwtTokens(response, email);
     }
 
     private String extractEmailFromAuthentication(Authentication authentication) {

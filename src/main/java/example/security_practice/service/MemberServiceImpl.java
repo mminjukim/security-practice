@@ -6,7 +6,6 @@ import example.security_practice.dto.request.SignupRequestDTO;
 import example.security_practice.dto.response.SignupResponseDTO;
 import example.security_practice.exception.CustomException;
 import example.security_practice.exception.ErrorCode;
-import example.security_practice.exception.ErrorResponseEntity;
 import example.security_practice.mapper.MemberMapper;
 import example.security_practice.repository.MemberRepository;
 import jakarta.transaction.Transactional;
@@ -29,7 +28,7 @@ public class MemberServiceImpl implements MemberService {
         // 이메일 중복 회원가입 예외
         String email = requestDTO.getEmail();
         if (memberRepository.findByEmail(email).isPresent()) {
-            ErrorResponseEntity.toResponseEntity(ErrorCode.HAS_EMAIL);
+            throw new CustomException(ErrorCode.HAS_EMAIL);
         }
         // 비밀번호 재입력 필드 일치하지 않는 예외
         String password = requestDTO.getPassword();
