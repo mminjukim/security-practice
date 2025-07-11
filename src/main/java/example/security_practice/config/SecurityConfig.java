@@ -68,7 +68,7 @@ public class SecurityConfig {
 
     @Bean
     public LoginSuccessHandler loginSuccessHandler() {
-        return new LoginSuccessHandler(jwtUtil, refreshTokenRepository, objectMapper());
+        return new LoginSuccessHandler(jwtUtil, refreshTokenRepository);
     }
 
     @Bean
