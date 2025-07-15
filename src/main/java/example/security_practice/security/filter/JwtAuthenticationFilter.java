@@ -46,18 +46,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         // AccessToken, RefreshToken이 전달됐는지 확인
         String refreshToken = jwtUtil.extractRefreshToken(request.getHeader("Authorization-refresh"));
-        String accessToken = jwtUtil.extractAccessToken(request.getHeader("Authorization"));
 
+        // RefreshToken 존재하는 경우
         if (!refreshToken.equals("NULL")) {
-            // RefreshToken 존재하는 경우
             checkRefreshTokenAndReissue(response, refreshToken);
             return;
-        } else {
-            // AccessToken만 있는 경우
-            SecurityContextHolder
-                    .getContext()
-                    .setAuthentication(authenticateToken(accessToken));
         }
+
+        String accessToken = jwtUtil.extractAccessToken(request.getHeader("Authorization"));
+        // AccessToken만 있는 경우
+        SecurityContextHolder
+                .getContext()
+                .setAuthentication(authenticateToken(accessToken));
 
         // 다음 필터로 전달
         filterChain.doFilter(request, response);

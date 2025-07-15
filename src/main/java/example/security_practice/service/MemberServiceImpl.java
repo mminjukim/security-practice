@@ -3,6 +3,7 @@ package example.security_practice.service;
 import example.security_practice.domain.Member;
 import example.security_practice.domain.Role;
 import example.security_practice.dto.request.SignupRequestDTO;
+import example.security_practice.dto.response.MemberResponseDTO;
 import example.security_practice.dto.response.SignupResponseDTO;
 import example.security_practice.exception.CustomException;
 import example.security_practice.exception.ErrorCode;
@@ -42,5 +43,12 @@ public class MemberServiceImpl implements MemberService {
         memberRepository.save(member);
 
         return SignupResponseDTO.from(member);
+    }
+
+    @Override
+    public MemberResponseDTO getMemberById(Long memberId) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
+        return MemberResponseDTO.from(member);
     }
 }
