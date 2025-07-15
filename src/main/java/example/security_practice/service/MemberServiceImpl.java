@@ -29,11 +29,13 @@ public class MemberServiceImpl implements MemberService {
         if (memberRepository.findByEmail(email).isPresent()) {
             throw new CustomException(ErrorCode.HAS_EMAIL);
         }
+
         // 비밀번호 재입력 필드 일치하지 않는 예외
         String password = requestDTO.getPassword();
         if (!password.equals(requestDTO.getConfirmPassword())) {
             throw new CustomException(ErrorCode.PASSWORD_NOT_MATCH);
         }
+
         // Member 엔티티 생성
         Member member = Member.builder()
                 .email(email)

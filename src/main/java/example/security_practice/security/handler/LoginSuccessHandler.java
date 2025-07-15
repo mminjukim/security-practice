@@ -4,7 +4,6 @@ import example.security_practice.domain.Member;
 import example.security_practice.domain.RefreshToken;
 import example.security_practice.repository.RefreshTokenRepository;
 import example.security_practice.security.JwtUtil;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -23,8 +22,7 @@ public class LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
                                         HttpServletResponse response,
-                                        Authentication authentication)
-            throws IOException, ServletException {
+                                        Authentication authentication) throws IOException {
 
         // 성공 Authentication 에서 이메일 추출
         String email = extractEmailFromAuthentication(authentication);
