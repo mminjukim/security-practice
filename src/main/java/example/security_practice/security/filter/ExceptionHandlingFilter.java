@@ -2,7 +2,6 @@ package example.security_practice.security.filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import example.security_practice.exception.CustomException;
-import example.security_practice.exception.ErrorCode;
 import example.security_practice.exception.ErrorResponseEntity;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -24,17 +23,13 @@ public class ExceptionHandlingFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         try {
             filterChain.doFilter(request, response);
+
         } catch (CustomException e) {
-            ErrorCode code = e.getErrorCode();
-            ErrorResponseEntity responseEntity = ErrorResponseEntity.builder()
-                    .httpStatus(code.getHttpStatus().value())
-                    .errorName(code.name())
-                    .message(code.getMessage())
-                    .build();
-            response.setStatus(code.getHttpStatus().value());
+            ErrorResponseEntity error = ErrorResponseEntity.from(e.getErrorCode());
+            response.setStatus(error.getHttpStatus());
             response.setContentType("application/json");
             response.setCharacterEncoding("UTF-8");
-            response.getWriter().write(objectMapper.writeValueAsString(responseEntity));
+            response.getWriter().write(objectMapper.writeValueAsString(error));
         }
     }
 }

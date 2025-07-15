@@ -10,4 +10,8 @@ public class LoginSuccessDTO {
     private String email;
     private String accessToken;
     private String refreshToken;
+
+    public static LoginSuccessDTO of(String message, String email, String accessToken, String refreshToken) {
+        return new LoginSuccessDTO(message, email, accessToken, refreshToken);
+    }
 }

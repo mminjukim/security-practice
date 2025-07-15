@@ -45,7 +45,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         // AccessToken, RefreshToken이 전달됐는지 확인
-        String refreshToken = jwtUtil.extractRefreshToken(request);
+        String refreshToken = jwtUtil.extractRefreshToken(request.getHeader("Authorization-refresh"));
         String accessToken = jwtUtil.extractAccessToken(request.getHeader("Authorization"));
 
         if (!refreshToken.equals("NULL")) {
@@ -69,8 +69,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         RefreshToken refreshTokenEntity = refreshTokenRepository.findByToken(refreshToken)
                 .orElseThrow(() -> new CustomException(ErrorCode.REFRESH_NOT_FOUND));
-        String email = refreshTokenEntity.getEmail();
+        if (!jwtUtil.isTokenValid(refreshToken)) {
+            throw new CustomException(ErrorCode.INVALID_TOKEN);
+        }
 
+        String email = refreshTokenEntity.getEmail();
         // 기존 RefreshToken 삭제
         refreshTokenRepository.delete(refreshTokenEntity);
         // 응답 작성

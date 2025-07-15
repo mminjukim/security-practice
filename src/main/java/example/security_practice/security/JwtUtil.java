@@ -10,8 +10,6 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,7 +21,6 @@ import java.io.IOException;
 import java.security.Key;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Arrays;
 import java.util.Date;
 
 @Component
@@ -83,24 +80,21 @@ public class JwtUtil {
 
     // HTTP 요청에서 Access 토큰 추출
     public String extractAccessToken(String authorizationHeader) {
-        if (authorizationHeader == null) {
+        if (authorizationHeader == null || authorizationHeader.isBlank()) {
             throw new CustomException(ErrorCode.TOKEN_NULL);
-        } else if (authorizationHeader.startsWith(BEARER)) {
-            return authorizationHeader.substring(BEARER.length());
-        } else {
+        } else if (!authorizationHeader.startsWith(BEARER)) {
             throw new CustomException(ErrorCode.TOKEN_NOT_BEARER);
+        } else {
+            return authorizationHeader.substring(BEARER.length());
         }
     }
 
-    // HTTP 요청에서 Refresh 토큰 추출
-    public String extractRefreshToken(HttpServletRequest request) {
-        Cookie cookie = Arrays.stream(request.getCookies()).filter(c -> c
-                        .getName().equals("RefreshToken")).findFirst()
-                .orElse(null);
-        if (cookie != null) {
-            return cookie.getValue();
-        } else {
+    public String extractRefreshToken(String authorizationHeader) {
+        if (authorizationHeader == null || authorizationHeader.isBlank()
+                || !authorizationHeader.startsWith(BEARER)) {
             return "NULL";
+        } else {
+            return authorizationHeader.substring(BEARER.length());
         }
     }
 
@@ -140,26 +134,17 @@ public class JwtUtil {
         refreshTokenRepository.save(refreshTokenEntity);
 
         // 응답 바디 생성
-        LoginSuccessDTO dto = LoginSuccessDTO.builder()
-                .message("토큰이 성공적으로 발급되었습니다.")
-                .email(email)
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .build();
-        String result = objectMapper.writeValueAsString(dto);
+        LoginSuccessDTO dto = LoginSuccessDTO.of(
+                "토큰이 성공적으로 발급되었습니다.",
+                email,
+                accessToken,
+                refreshToken
+        );
 
         // 응답 객체
         response.setStatus(HttpServletResponse.SC_OK);
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
-        response.addCookie(createCookie(refreshToken));
-        response.getWriter().write(result);
-    }
-
-    private Cookie createCookie(String value) {
-        Cookie cookie = new Cookie("RefreshToken", value);
-        cookie.setMaxAge(12 * 60 * 60); // 12h
-        cookie.setHttpOnly(true);   //JS로 접근 불가, 탈취 위험 감소
-        return cookie;
+        response.getWriter().write(objectMapper.writeValueAsString(dto));
     }
 }
