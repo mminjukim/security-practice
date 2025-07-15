@@ -6,7 +6,6 @@ import example.security_practice.dto.request.SignupRequestDTO;
 import example.security_practice.dto.response.SignupResponseDTO;
 import example.security_practice.exception.CustomException;
 import example.security_practice.exception.ErrorCode;
-import example.security_practice.mapper.MemberMapper;
 import example.security_practice.repository.MemberRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +18,6 @@ import org.springframework.stereotype.Service;
 public class MemberServiceImpl implements MemberService {
 
     private final MemberRepository memberRepository;
-    private final MemberMapper mapper;
     private final PasswordEncoder encoder;
 
 
@@ -43,6 +41,6 @@ public class MemberServiceImpl implements MemberService {
                 .role(Role.USER).build();
         memberRepository.save(member);
 
-        return mapper.toDto(member);
+        return SignupResponseDTO.from(member);
     }
 }
